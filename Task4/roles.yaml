@@ -1,31 +1,89 @@
-# Cluster pod reader
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: cluster-pod-reader
+  name: cluster-reader
 rules:
   - apiGroups: [ "" ]
-    resources: [ "pods" ]
+    resources: [ "pods", "services", "namespaces", "events" ]
     verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "apps" ]
+    resources: [ "deployments", "replicasets", "statefulsets", "daemonsets" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "" ]
+    resources: [ "pods/log" ]
+    verbs: [ "get", "list" ]
+
 ---
-# DevOps
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  namespace: development
-  name: devops-role
+  name: namespace-developer
+  namespace: sales-team
 rules:
   - apiGroups: [ "" ]
-    resources: [ "pods" ]
-    verbs: [ "create", "delete", "list" ]
+    resources: [ "pods", "services", "configmaps" ]
+    verbs: [ "get", "list", "watch", "create", "update", "patch", "delete" ]
+  - apiGroups: [ "apps" ]
+    resources: [ "deployments", "replicasets" ]
+    verbs: [ "get", "list", "watch", "create", "update", "patch", "delete" ]
+  - apiGroups: [ "networking.k8s.io" ]
+    resources: [ "ingresses" ]
+    verbs: [ "get", "list", "watch", "create", "update", "patch", "delete" ]
+  - apiGroups: [ "" ]
+    resources: [ "pods/log" ]
+    verbs: [ "get", "list" ]
+
 ---
-# Secret reader
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  namespace: secure-space
+  name: namespace-admin
+  namespace: sales-team
+rules:
+  - apiGroups: [ "", "apps", "batch", "extensions", "networking.k8s.io", "rbac.authorization.k8s.io" ]
+    resources: [ "*" ]
+    verbs: [ "*" ]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
   name: secret-reader
+  namespace: sales-team
 rules:
   - apiGroups: [ "" ]
     resources: [ "secrets" ]
-    verbs: [ "get", "list" ]
+    verbs: [ "get", "list", "watch" ]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cluster-operator
+rules:
+  - apiGroups: [ "" ]
+    resources: [ "nodes", "namespaces", "persistentvolumes", "persistentvolumeclaims", "services", "endpoints" ]
+    verbs: [ "get", "list", "watch", "create", "update", "patch" ]
+  - apiGroups: [ "apps" ]
+    resources: [ "deployments", "daemonsets", "statefulsets" ]
+    verbs: [ "get", "list", "watch", "create", "update", "patch" ]
+  - apiGroups: [ "networking.k8s.io" ]
+    resources: [ "networkpolicies", "ingresses" ]
+    verbs: [ "get", "list", "watch", "create", "update", "patch" ]
+  - apiGroups: [ "rbac.authorization.k8s.io" ]
+    resources: [ "roles", "rolebindings" ]
+    verbs: [ "get", "list", "watch", "create", "update", "patch" ]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cluster-admin-platform
+subjects:
+  - kind: Group
+    name: platform-admins
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
